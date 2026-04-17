@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .calculator {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 24px;
+      width: 320px;
+      box-shadow:
+        0 25px 45px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05);
+    }
+
+    /* ── Display ── */
+    .display {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 16px;
+      padding: 20px 20px 16px;
+      margin-bottom: 20px;
+      text-align: right;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .display .expression {
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+      min-height: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .display .current {
+      color: #ffffff;
+      font-size: 40px;
+      font-weight: 300;
+      letter-spacing: -1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: font-size 0.1s ease;
+    }
+
+    /* ── Button Grid ── */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 500;
+      height: 60px;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      transform: scale(0.93);
+    }
+
+    /* 數字 & 小數點 */
+    .btn-digit {
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-digit:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    /* 運算子 */
+    .btn-op {
+      background: rgba(82, 130, 255, 0.25);
+      color: #7aaeff;
+      box-shadow: 0 4px 8px rgba(82, 130, 255, 0.15);
+    }
+
+    .btn-op:hover {
+      background: rgba(82, 130, 255, 0.4);
+    }
+
+    .btn-op.active {
+      background: rgba(82, 130, 255, 0.55);
+      color: #ffffff;
+    }
+
+    /* 清除 / 退格 */
+    .btn-util {
+      background: rgba(255, 80, 80, 0.2);
+      color: #ff8080;
+      box-shadow: 0 4px 8px rgba(255, 80, 80, 0.1);
+    }
+
+    .btn-util:hover {
+      background: rgba(255, 80, 80, 0.35);
+    }
+
+    /* 等號 */
+    .btn-equals {
+      background: linear-gradient(135deg, #5282ff, #7b5ea7);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(82, 130, 255, 0.45);
+    }
+
+    .btn-equals:hover {
+      filter: brightness(1.12);
+      box-shadow: 0 6px 20px rgba(82, 130, 255, 0.6);
+    }
+
+    /* 0 佔兩格 */
+    .btn-zero {
+      grid-column: span 2;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <div class="current" id="current">0</div>
+    </div>
+
+    <div class="buttons">
+      <!-- Row 1 -->
+      <button class="btn-util" data-action="clear">C</button>
+      <button class="btn-util" data-action="sign">+/−</button>
+      <button class="btn-util" data-action="percent">%</button>
+      <button class="btn-op"   data-action="op" data-op="÷">÷</button>
+
+      <!-- Row 2 -->
+      <button class="btn-digit" data-action="digit" data-value="7">7</button>
+      <button class="btn-digit" data-action="digit" data-value="8">8</button>
+      <button class="btn-digit" data-action="digit" data-value="9">9</button>
+      <button class="btn-op"   data-action="op" data-op="×">×</button>
+
+      <!-- Row 3 -->
+      <button class="btn-digit" data-action="digit" data-value="4">4</button>
+      <button class="btn-digit" data-action="digit" data-value="5">5</button>
+      <button class="btn-digit" data-action="digit" data-value="6">6</button>
+      <button class="btn-op"   data-action="op" data-op="−">−</button>
+
+      <!-- Row 4 -->
+      <button class="btn-digit" data-action="digit" data-value="1">1</button>
+      <button class="btn-digit" data-action="digit" data-value="2">2</button>
+      <button class="btn-digit" data-action="digit" data-value="3">3</button>
+      <button class="btn-op"   data-action="op" data-op="+">+</button>
+
+      <!-- Row 5 -->
+      <button class="btn-digit btn-zero" data-action="digit" data-value="0">0</button>
+      <button class="btn-digit"          data-action="decimal">.</button>
+      <button class="btn-equals"         data-action="equals">=</button>
+    </div>
+  </div>
+
+  <script>
+    // ── 狀態 ──────────────────────────────────────────
+    const state = {
+      currentValue: '0',   // 目前顯示數值（字串）
+      prevValue: null,      // 上一個運算元
+      operator: null,       // 待執行的運算子
+      shouldReset: false,   // 下次輸入是否重置顯示
+    };
+
+    // ── DOM ───────────────────────────────────────────
+    const displayCurrent    = document.getElementById('current');
+    const displayExpression = document.getElementById('expression');
+
+    // ── 更新顯示 ──────────────────────────────────────
+    function updateDisplay() {
+      const text = state.currentValue;
+      displayCurrent.textContent = text;
+
+      // 數字過長時縮小字體
+      const len = text.replace('-', '').replace('.', '').length;
+      displayCurrent.style.fontSize = len > 9 ? '24px' : len > 6 ? '32px' : '40px';
+    }
+
+    function updateExpression(text) {
+      displayExpression.textContent = text;
+    }
+
+    // ── 格式化數字輸出（避免浮點誤差）────────────────
+    function formatResult(num) {
+      if (!isFinite(num)) return 'Error';
+      // 最多保留 10 位有效數字，去除多餘的尾零
+      const result = parseFloat(num.toPrecision(10));
+      return String(result);
+    }
+
+    // ── 運算核心 ──────────────────────────────────────
+    function calculate(a, op, b) {
+      switch (op) {
+        case '+': return a + b;
+        case '−': return a - b;
+        case '×': return a * b;
+        case '÷': return b === 0 ? Infinity : a / b;
+        default:  return b;
+      }
+    }
+
+    // ── 高亮當前運算子按鈕 ────────────────────────────
+    function highlightOperator(op) {
+      document.querySelectorAll('.btn-op').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.op === op);
+      });
+    }
+
+    // ── 動作處理器 ────────────────────────────────────
+    const handlers = {
+      digit(value) {
+        if (state.shouldReset) {
+          state.currentValue = value;
+          state.shouldReset = false;
+        } else {
+          state.currentValue =
+            state.currentValue === '0'
+              ? value
+              : state.currentValue.length < 12
+              ? state.currentValue + value
+              : state.currentValue;
+        }
+        updateDisplay();
+      },
+
+      decimal() {
+        if (state.shouldReset) {
+          state.currentValue = '0.';
+          state.shouldReset = false;
+          updateDisplay();
+          return;
+        }
+        if (!state.currentValue.includes('.')) {
+          state.currentValue += '.';
+          updateDisplay();
+        }
+      },
+
+      op(op) {
+        const current = parseFloat(state.currentValue);
+
+        // 若已有上一個運算元且尚未重置，先計算鏈式結果
+        if (state.operator && !state.shouldReset) {
+          const result = calculate(parseFloat(state.prevValue), state.operator, current);
+          state.currentValue = formatResult(result);
+          updateDisplay();
+          state.prevValue = state.currentValue;
+        } else {
+          state.prevValue = state.currentValue;
+        }
+
+        state.operator = op;
+        state.shouldReset = true;
+        highlightOperator(op);
+        updateExpression(`${state.prevValue} ${op}`);
+      },
+
+      equals() {
+        if (state.operator === null || state.prevValue === null) return;
+
+        const a      = parseFloat(state.prevValue);
+        const b      = parseFloat(state.currentValue);
+        const result = calculate(a, state.operator, b);
+
+        updateExpression(`${state.prevValue} ${state.operator} ${state.currentValue} =`);
+        state.currentValue = formatResult(result);
+        state.prevValue    = null;
+        state.operator     = null;
+        state.shouldReset  = true;
+        highlightOperator(null);
+        updateDisplay();
+      },
+
+      clear() {
+        state.currentValue = '0';
+        state.prevValue    = null;
+        state.operator     = null;
+        state.shouldReset  = false;
+        highlightOperator(null);
+        updateDisplay();
+        updateExpression('');
+      },
+
+      sign() {
+        if (state.currentValue === '0') return;
+        state.currentValue = state.currentValue.startsWith('-')
+          ? state.currentValue.slice(1)
+          : '-' + state.currentValue;
+        updateDisplay();
+      },
+
+      percent() {
+        const num = parseFloat(state.currentValue);
+        state.currentValue = formatResult(num / 100);
+        updateDisplay();
+      },
+    };
+
+    // ── 事件委派 ──────────────────────────────────────
+    document.querySelector('.buttons').addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      if (!action || !handlers[action]) return;
+
+      if (action === 'digit') {
+        handlers.digit(btn.dataset.value);
+      } else if (action === 'op') {
+        handlers.op(btn.dataset.op);
+      } else {
+        handlers[action]();
+      }
+    });
+
+    // ── 鍵盤支援 ──────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key >= '0' && e.key <= '9') { handlers.digit(e.key); return; }
+      const keyMap = {
+        '.': () => handlers.decimal(),
+        ',': () => handlers.decimal(),
+        '+': () => handlers.op('+'),
+        '-': () => handlers.op('−'),
+        '*': () => handlers.op('×'),
+        '/': () => { e.preventDefault(); handlers.op('÷'); },
+        'Enter':     () => handlers.equals(),
+        '=':         () => handlers.equals(),
+        'Backspace':  () => {
+          if (state.shouldReset) return;
+          state.currentValue = state.currentValue.length > 1
+            ? state.currentValue.slice(0, -1)
+            : '0';
+          updateDisplay();
+        },
+        'Escape': () => handlers.clear(),
+        '%':      () => handlers.percent(),
+      };
+      if (keyMap[e.key]) keyMap[e.key]();
+    });
+  </script>
+</body>
+</html>
